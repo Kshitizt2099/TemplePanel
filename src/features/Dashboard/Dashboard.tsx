@@ -93,6 +93,14 @@ const Dashboard = () => {
         }
     };
 
+    const clearHomepagePosition = async () => {
+        const { error } = await supabase
+            .from('Contents')
+            .update({ Position: null })
+            .eq('Position', 'homepage');
+        if (error) throw error;
+    };
+
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -123,13 +131,19 @@ const Dashboard = () => {
 
             const publicUrl = publicUrlData.publicUrl;
 
+            // If assigning homepage, first clear any existing homepage video
+            if (typeOfContent === 'video' && position === 'homepage') {
+                setMessage('Clearing existing homepage video...');
+                await clearHomepagePosition();
+            }
+
             const { error: dbError } = await supabase
                 .from('Contents') 
                 .insert([
                     { 
                         tyepOfContent: typeOfContent, 
                         content: publicUrl,
-                        Position: position || null 
+                        Position: typeOfContent === 'video' ? (position || null) : null 
                     }
                 ]);
 
@@ -149,6 +163,45 @@ const Dashboard = () => {
             setMessage(`Error: ${error.message}`);
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleSetHomepage = async (record: ContentRecord) => {
+        try {
+            // Remove homepage from any existing video
+            await clearHomepagePosition();
+            // Assign homepage to this record
+            const { error } = await supabase
+                .from('Contents')
+                .update({ Position: 'homepage' })
+                .eq('id', record.id);
+            if (error) throw error;
+            setRecords(prev =>
+                prev.map(r =>
+                    r.tyepOfContent === 'video'
+                        ? { ...r, Position: r.id === record.id ? 'homepage' : null }
+                        : r
+                )
+            );
+        } catch (error: any) {
+            alert('Failed to set homepage: ' + error.message);
+        }
+    };
+
+    const handleRemoveHomepage = async (record: ContentRecord) => {
+        try {
+            const { error } = await supabase
+                .from('Contents')
+                .update({ Position: null })
+                .eq('id', record.id);
+            if (error) throw error;
+            setRecords(prev =>
+                prev.map(r =>
+                    r.id === record.id ? { ...r, Position: null } : r
+                )
+            );
+        } catch (error: any) {
+            alert('Failed to remove homepage: ' + error.message);
         }
     };
 
@@ -193,17 +246,20 @@ const Dashboard = () => {
                                     </select>
                                 </div>
 
-                                <div className="input-group">
-                                    <label htmlFor="position">Position (Optional)</label>
-                                    <input 
-                                        id="position"
-                                        type="text" 
-                                        placeholder="e.g. Header, Footer, Carousel"
-                                        value={position}
-                                        onChange={(e) => setPosition(e.target.value)}
-                                        className="styled-input"
-                                    />
-                                </div>
+                                {typeOfContent === 'video' && (
+                                    <div className="input-group">
+                                        <label htmlFor="position">Position (Optional)</label>
+                                        <select
+                                            id="position"
+                                            value={position}
+                                            onChange={(e) => setPosition(e.target.value)}
+                                            className="styled-input"
+                                        >
+                                            <option value="">-- No Position --</option>
+                                            <option value="homepage">Homepage</option>
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div className="input-group">
                                     <label htmlFor="fileUpload">Select File</label>
@@ -270,12 +326,31 @@ const Dashboard = () => {
                                                         <a href={record.content} target="_blank" rel="noopener noreferrer" className="link">View Full Size</a>
                                                     </td>
                                                     <td>
-                                                        <button 
-                                                            className="delete-button" 
-                                                            onClick={() => handleDelete(record)}
-                                                        >
-                                                            Delete
-                                                        </button>
+                                                        <div className="action-buttons">
+                                                            {record.tyepOfContent === 'video' && (
+                                                                record.Position === 'homepage' ? (
+                                                                    <button
+                                                                        className="homepage-button remove"
+                                                                        onClick={() => handleRemoveHomepage(record)}
+                                                                    >
+                                                                        ✕ Remove Homepage
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        className="homepage-button set"
+                                                                        onClick={() => handleSetHomepage(record)}
+                                                                    >
+                                                                        🏠 Set as Homepage
+                                                                    </button>
+                                                                )
+                                                            )}
+                                                            <button 
+                                                                className="delete-button" 
+                                                                onClick={() => handleDelete(record)}
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

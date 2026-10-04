@@ -239,6 +239,47 @@
     color: white;
 }
 
+/* --- ACTION BUTTONS (records table) --- */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.homepage-button {
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.homepage-button.set {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.homepage-button.set:hover {
+    background: #fbbf24;
+    color: #0f172a;
+}
+
+.homepage-button.remove {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.homepage-button.remove:hover {
+    background: #ef4444;
+    color: white;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
